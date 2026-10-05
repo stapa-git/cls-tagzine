@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLS TAG ZINE（非公式）</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg-blobs" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+<header class="masthead">
+  <div class="swim" aria-hidden="true"><div class="katsuo-swimmer" id="swimmer"></div></div>
+  <h1 class="logo-wrap" aria-label="CLS TAG ZINE（非公式）">
+    <span class="logo-cls" aria-hidden="true">CLS</span>
+    <div class="logo" id="logo" role="button" tabindex="0" title="押すと はねるよ！"><span>T</span><span>A</span><span>G</span><span class="sp"></span><span>Z</span><span>I</span><span>N</span><span>E</span></div>
+    <span class="logo-unofficial" aria-hidden="true">非公式</span>
+  </h1>
+  <p class="tagline">ハッシュタグの投稿を、切り貼りして遊ぶボード <span class="poke">↑ ロゴを押すと はねるよ！</span></p>
+  <div class="sea-band" aria-hidden="true">
+    <svg class="wave w1" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q75 0 150 20 T300 20 T450 20 T600 20 T750 20 T900 20 T1050 20 T1200 20 V40 H0 Z"/></svg>
+    <svg class="wave w2" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 22 Q100 6 200 22 T400 22 T600 22 T800 22 T1000 22 T1200 22 V40 H0 Z"/></svg>
+    <div class="ticker"><div class="ticker-in" id="ticker"></div></div>
+  </div>
+</header>
+
+<section class="panel" id="panel">
+  <div class="row">
+    <label class="field hash">
+      <span>ハッシュタグ</span>
+      <div class="hash-input"><b>#</b><input id="tag" placeholder="例：CLS高知" autocomplete="off"></div>
+    </label>
+    <label class="field"><span>いつから</span><input type="date" id="from"></label>
+    <label class="field"><span>いつまで</span><input type="date" id="to"></label>
+    <label class="check"><input type="checkbox" id="photoOnly"><span>写真つきだけ</span></label>
+  </div>
+  <div class="presets">
+    <div class="chips"><em>タグ</em><span id="tagChips"></span></div>
+    <div class="chips"><em>期間</em><span id="periodChips"></span></div>
+  </div>
+  <div class="row actions">
+    <button class="btn sea" id="openSearch">① Xで検索をひらく ↗</button>
+    <button class="btn yuzu" id="toggleAdd">② 投稿URLを追加</button>
+    <button class="btn ghost" id="openHelp">集め方ガイド</button>
+    <button class="btn flame" id="screenBtn">スクリーンモード</button>
+    <span class="spacer"></span>
+    <button class="btn ghost small" id="shareBtn">共有リンク</button>
+    <button class="btn ghost small" id="exportBtn">書き出し</button>
+    <label class="btn ghost small file">読み込み<input type="file" id="importFile" accept=".json"></label>
+    <button class="btn ghost small" id="demoBtn">デモで試す</button>
+    <button class="btn ghost small danger" id="clearBtn">全部消す</button>
+  </div>
+  <div class="adder" id="adder" hidden>
+    <textarea id="urls" rows="5" placeholder="投稿URLをまとめて貼り付け（1行1件でも、文章ごとでもOK）&#10;https://x.com/xxxx/status/1234567890123456789"></textarea>
+    <div class="row">
+      <button class="btn green" id="addBtn">ボードに追加</button>
+      <span class="hint" id="addMsg"></span>
+    </div>
+  </div>
+</section>
+
+<nav class="tabs" id="tabs">
+  <button data-view="board" class="on">ボード</button>
+  <button data-view="pick">ピックアップ <em id="pinCount">0</em></button>
+  <button data-view="time">タイムライン</button>
+  <button data-view="graph">つながり</button>
+  <span class="stat" id="stat"></span>
+</nav>
+
+<main>
+  <section class="view on" id="view-board">
+    <div class="toolbar">
+      <button class="btn small ghost" id="shuffleBtn">シャッフル</button>
+      <select id="sortSel">
+        <option value="new">新しい順</option>
+        <option value="old">古い順</option>
+        <option value="author">投稿者ごと</option>
+      </select>
+      <input id="search" placeholder="本文・名前で絞り込み">
+      <button class="btn small ghost" id="loadAllBtn" hidden>本文を全部読み込む</button>
+    </div>
+    <div class="masonry" id="board"></div>
+    <div class="sentinel" id="sentinel"></div>
+    <div class="empty" id="emptyBoard">
+      <div class="empty-sticker">まだ何も<br>貼ってないよ</div>
+      <p>① ハッシュタグと期間を入れて「Xで検索をひらく」<br>② 気になる投稿のURLをコピーして「投稿URLを追加」<br>まずは <button class="link" id="demoBtn2">デモ</button> で雰囲気をどうぞ。</p>
+    </div>
+  </section>
+
+  <section class="view" id="view-pick">
+    <div class="toolbar">
+      <button class="btn sea" id="lotteryBtn">一本釣りで1枚ひく</button>
+      <span class="hint">表示中の投稿から1枚を釣り上げます。カードの ★ でピックアップに追加</span>
+    </div>
+    <div class="fishing" id="fishing">
+      <div class="rod-line" id="rodLine"><i class="hook"></i></div>
+      <div class="catch" id="catch"><p class="idle">糸を垂らして、1枚 釣り上げよう</p></div>
+      <div class="under" id="under"></div>
+      <svg class="wave f1" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 20 Q75 0 150 20 T300 20 T450 20 T600 20 T750 20 T900 20 T1050 20 T1200 20 V40 H0 Z"/></svg>
+      <svg class="wave f2" viewBox="0 0 1200 40" preserveAspectRatio="none"><path d="M0 22 Q100 6 200 22 T400 22 T600 22 T800 22 T1000 22 T1200 22 V40 H0 Z"/></svg>
+    </div>
+    <h3 class="sub">ピックアップ一覧</h3>
+    <div class="pick-grid" id="pickGrid"></div>
+  </section>
+
+  <section class="view" id="view-time">
+    <div class="toolbar">
+      <button class="btn green" id="playBtn">▶ 時系列で再生</button>
+      <span class="hint">棒をクリックするとその日にジャンプ</span>
+    </div>
+    <div class="histo" id="histo"></div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <section class="view" id="view-graph">
+    <div class="toolbar">
+      <span class="hint">本文の @メンション から「だれが だれに 触れているか」を描きます。丸はドラッグできます。</span>
+      <button class="btn small ghost" id="regraphBtn">配置しなおす</button>
+      <button class="btn small ghost" id="loadAllBtn2">本文を全部読み込む</button>
+    </div>
+    <div class="graph-wrap"><svg id="graph"></svg><div class="graph-info" id="graphInfo"></div></div>
+  </section>
+</main>
+
+<footer class="foot-note">
+  このアプリは非公式のファンメイド・プロトタイプです。<a href="https://www.cls-kochi.com/" target="_blank" rel="noopener">CLS高知（コミュニティリーダーズサミット in 高知）</a>の公式ツールではありません。<br>
+  投稿の表示には X の公式埋め込みを使っています。フォント：Dela Gothic One / M PLUS Rounded 1c（SIL Open Font License）
+</footer>
+
+<!-- 公式埋め込みモーダル -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-card">
+    <button class="close" id="modalClose" aria-label="閉じる">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- 集め方ガイド -->
+<div class="modal" id="help" hidden>
+  <div class="modal-card help">
+    <button class="close" data-close="help" aria-label="閉じる">×</button>
+    <h2>投稿URLの集め方（いちばん速い手順）</h2>
+    <ol>
+      <li><b>タグと期間を選んで「① Xで検索をひらく」</b><br>「タグ」「期間」のボタンを押すとすぐ入力されます。Xの検索が、期間・ハッシュタグ・（チェック時は）写真つきで絞り込まれた状態で開きます。「最新」タブで時系列順に並びます。</li>
+      <li><b>方法A：1件ずつ</b><br>投稿の「共有」ボタン →「リンクをコピー」→ このページの「② 投稿URLを追加」に貼り付け。入力欄以外の場所に貼り付けても追加されます。</li>
+      <li><b>方法B：まとめて集める（ブックマークレット）</b><br>下のボタンをブックマークバーにドラッグして登録。X の検索結果ページでクリックすると右下にカウンターが出ます。<b>そのまま自分でスクロール</b>すると、画面に出てきた投稿URLが貯まっていきます。カウンターをクリックするとまとめてコピー → ここに貼り付け。
+        <p class="bm-wrap"><a class="bookmarklet" id="bookmarklet" href="#">CLS TAG ZINE コレクター</a></p>
+        <small>画面に表示された投稿のリンクを拾うだけで、自動スクロールや自動取得はしません。必要な分だけ使ってください。</small>
+      </li>
+      <li><b>期間は「いつまで」の日を含みます。</b> 期間外のURLを貼っても、このボード上の期間で自動的に絞り込まれます（投稿IDから日時を計算しています）。</li>
+    </ol>
+    <h3>ちょっとしたコツ</h3>
+    <ul>
+      <li>CLS高知のように1回で1,500件を超えるイベントでは、<code>min_faves:10</code>（いいね10以上）を検索に足すと、反応の多い投稿から集められます。</li>
+      <li>本文は、カードが画面に入ったときに順番に読み込みます。つながり図を全員分描きたいときは「本文を全部読み込む」を押してください。</li>
+      <li>「共有リンク」を押すと、今のボード（ハッシュタグ・期間・URL・ピックアップ）を入れたリンクがコピーされます。投稿の本文はリンクに含まれず、開いた人の画面でXから表示されます。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- スクリーンモード -->
+<div class="screen" id="screen" hidden>
+  <div class="screen-sea" aria-hidden="true"><div class="screen-fish" id="screenFish"></div></div>
+  <div class="screen-top">
+    <div class="screen-tag" id="screenTag">#TAG</div>
+    <div class="screen-ctrl">
+      <select id="screenSrc">
+        <option value="pins">ピックアップ</option>
+        <option value="all">表示中すべて（古い順）</option>
+        <option value="new">新着順</option>
+        <option value="random">ランダム</option>
+      </select>
+      <label class="check light"><input type="checkbox" id="screenEmbed"><span>公式表示（写真つき）</span></label>
+      <button class="sbtn" id="sPrev" title="前へ（←）">◀</button>
+      <button class="sbtn" id="sPlay" title="一時停止（スペース）">❚❚</button>
+      <button class="sbtn" id="sNext" title="次へ（→）">▶</button>
+      <button class="sbtn" id="sClose" title="閉じる（Esc）">×</button>
+    </div>
+  </div>
+  <div class="screen-stage" id="screenStage"></div>
+  <div class="screen-bottom"><span id="screenCount"></span><div class="screen-bar"><i id="screenBar"></i></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script src="app.js"></script>
+</body>
+</html>
