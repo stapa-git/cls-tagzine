@@ -1026,11 +1026,47 @@ function drawConfetti() {
 /* ---------- 起動 ---------- */
 $('#swimmer').innerHTML = KATSUO_SVG;
 buildChips();
-if (!loadFromHash() && !load()) {
+const fromHash = loadFromHash();
+const hadSaved = !fromHash && load();
+if (!fromHash && !hadSaved) {
   state.tag = PRESETS.defaultTag;
   const p = PRESETS.periods[0];
   if (p) Object.assign(state, periodRange(p));
 }
 writeInputs();
 render();
+
+/* ---------- おすすめボード（preset.json） ----------
+ * リポジトリに preset.json（「書き出し」で保存したファイル）を置くと、
+ * はじめて開いた人には自動でそのボードが表示されます。
+ * すでに自分のボードがある人は上書きせず、「おすすめボード」ボタンで追加できます。
+ */
+let presetData = null;
+async function fetchPreset() {
+  try {
+    const res = await fetch('preset.json', { cache: 'no-cache' });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d && d.app === 'tagzine' && Array.isArray(d.posts) && d.posts.length ? d : null;
+  } catch { return null; } // ローカルで index.html を直接開いたときは読めません
+}
+function applyPreset(d, auto) {
+  const before = Object.keys(state.posts).length;
+  applySnapshot(d);
+  const added = Object.keys(state.posts).length - before;
+  toast(auto ? `おすすめボード（${added} 件）をひらきました` : `おすすめボードから ${added} 件追加しました`);
+  const r = $('#presetBtn').getBoundingClientRect();
+  if (!auto) confetti(r.left + r.width / 2, r.top, 60);
+}
+fetchPreset().then(d => {
+  presetData = d;
+  if (!d) return;
+  $('#presetBtn').hidden = false;
+  if (!fromHash && !hadSaved) applyPreset(d, true); // はじめての人だけ自動で表示
+});
+$('#presetBtn').onclick = async () => {
+  const d = presetData || await fetchPreset();
+  if (!d) { toast('おすすめボードを読み込めませんでした'); return; }
+  applyPreset(d, false);
+};
 })();
